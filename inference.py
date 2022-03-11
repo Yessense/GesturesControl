@@ -33,10 +33,7 @@ DISTANCES = {
 LABELS_R = {value: key for key, value in LABELS.items()}
 DISTANSES_R = {value: key for key, value in DISTANCES.items()}
 
-DATASET_DIR = '/media/yessense/Transcend/gestures_dataset'
-ANNOTATED_DIR = '/media/yessense/Transcend/annotated_images'
-
-CLASSIFIER_PATH = '/home/yessense/PycharmProjects/RoboDogControl/data/classifier.joblib'
+CLASSIFIER_PATH = 'classifier.joblib'
 classifier = load(CLASSIFIER_PATH)
 cap = cv2.VideoCapture(INPUT_SOURCE)
 with mp_pose.Pose(
@@ -67,7 +64,8 @@ with mp_pose.Pose(
                            point.z,
                            point.visibility])
 
-        person = np.array(person).reshape(-1, 33 * 4)  # type: ignore
+        person = np.array(person)
+        person = person.reshape(-1, 33 * 4)  # type: ignore
         pred = softmax(classifier.predict(person, raw_score=True))[0]
         pred_argmax = np.argmax(pred)
         print(pred)
