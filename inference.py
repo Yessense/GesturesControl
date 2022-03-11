@@ -65,14 +65,17 @@ with mp_pose.Pose(
                            point.visibility])
 
         person = np.array(person)
-        person = person.reshape(-1, 33 * 4)  # type: ignore
-        pred = softmax(classifier.predict(person, raw_score=True))[0]
-        pred_argmax = np.argmax(pred)
-        print(pred)
-        if pred[pred_argmax] > 0.9:
-            label = LABELS[pred_argmax]  # type: ignore
+        if np.mean(person[:,3]) < 0.8:
+            label = 'no points'
         else:
-            label = 'none'
+            person = person.reshape(-1, 33 * 4)  # type: ignore
+            pred = softmax(classifier.predict(person, raw_score=True))[0]
+            pred_argmax = np.argmax(pred)
+            print(pred)
+            if pred[pred_argmax] > 0.9:
+                label = LABELS[pred_argmax]  # type: ignore
+            else:
+                label = 'none'
         # label = LABELS[pred[0]]
 
         # Draw the pose annotation on the image.
