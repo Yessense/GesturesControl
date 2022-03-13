@@ -5,6 +5,8 @@ import mediapipe as mp  # type: ignore
 import numpy as np
 from scipy.special import softmax  # type: ignore
 
+from body_pose_embedder import FullBodyPoseEmbedder
+
 np.set_printoptions(precision=3, suppress=True)
 from joblib import dump, load  # type: ignore
 
@@ -35,7 +37,10 @@ DISTANSES_R = {value: key for key, value in DISTANCES.items()}
 
 CLASSIFIER_PATH = 'classifier.joblib'
 classifier = load(CLASSIFIER_PATH)
+embedder = FullBodyPoseEmbedder()
+
 cap = cv2.VideoCapture(INPUT_SOURCE)
+
 with mp_pose.Pose(
         min_detection_confidence=0.5,
         min_tracking_confidence=0.5) as pose:
@@ -61,21 +66,19 @@ with mp_pose.Pose(
         for point in results.pose_landmarks.landmark:
             person.append([point.x,
                            point.y,
-                           point.z,
-                           point.visibility])
+                           point.z])
 
         person = np.array(person)
-        if np.mean(person[:,3]) < 0.8:
-            label = 'no points'
+        person = embedder(person)
+
+        person = person.reshape(-1, np.prod(person.shape))  # type: ignore
+        pred = softmax(classifier.predict(person, raw_score=True))[0]
+        pred_argmax = np.argmax(pred)
+        print(pred)
+        if pred[pred_argmax] > 0.9:
+            label = LABELS[pred_argmax]  # type: ignore
         else:
-            person = person.reshape(-1, 33 * 4)  # type: ignore
-            pred = softmax(classifier.predict(person, raw_score=True))[0]
-            pred_argmax = np.argmax(pred)
-            print(pred)
-            if pred[pred_argmax] > 0.9:
-                label = LABELS[pred_argmax]  # type: ignore
-            else:
-                label = 'none'
+            label = 'none'
         # label = LABELS[pred[0]]
 
         # Draw the pose annotation on the image.
