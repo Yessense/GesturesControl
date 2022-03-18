@@ -97,11 +97,11 @@ class PoseClassifier(object):
                 continue
 
             # get predictions
-            label, confidence, results = self.predict_pose(image)
+            label, confidence, results = self._predict_pose(image)
 
             # display image
             if imshow:
-                self.imshow(image, label, results)
+                self._imshow(image, label, results)
 
             # Press Esc to exit
             if cv2.waitKey(args.delay) & 0xFF == 27:
@@ -112,12 +112,12 @@ class PoseClassifier(object):
                 print("No person is found on the image")
                 continue
             else:
-                self.process_prediction(label, confidence)
+                self._process_prediction(label, confidence)
 
 
         cap.release()
 
-    def imshow(self, image, label: Optional[int], results: Any):
+    def _imshow(self, image, label: Optional[int], results: Any):
         """Draw the pose annotation on the image. """
         image.flags.writeable = True
         # image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
@@ -140,7 +140,7 @@ class PoseClassifier(object):
         # Display image
         cv2.imshow('Prediction', image)
 
-    def predict_pose(self, image) -> Tuple[Optional[int], Optional[float], Any]:
+    def _predict_pose(self, image) -> Tuple[Optional[int], Optional[float], Any]:
         # To improve performance, optionally mark the image as not writeable to
         # pass by reference.
         image.flags.writeable = False
@@ -169,7 +169,7 @@ class PoseClassifier(object):
 
         return label, confidence, results
 
-    def process_prediction(self, label, confidence):
+    def _process_prediction(self, label, confidence):
         """CHANGE OUTCOME HERE"""
         out = f'{self.LABELS[label]} {confidence:.3f}'
         print(out)
