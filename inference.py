@@ -15,8 +15,8 @@ parser = ArgumentParser()
 
 # add PROGRAM level args
 program_parser = parser.add_argument_group('Options')
-program_parser.add_argument("--display_image", type=bool, default=False)
-program_parser.add_argument("--source", type=int, default=0)
+program_parser.add_argument("--display_image", type=bool, default=True)
+program_parser.add_argument("--source", type=Union[int], default=0)
 program_parser.add_argument("--confidence", type=bool, default=True)
 program_parser.add_argument("--delay", type=int, default=5)
 program_parser.add_argument("--classifier_path", type=str, default='classifier.joblib')
@@ -103,6 +103,10 @@ class PoseClassifier(object):
             if imshow:
                 self.imshow(image, label, results)
 
+            # Press Esc to exit
+            if cv2.waitKey(args.delay) & 0xFF == 27:
+                break
+
             # processing predictions
             if label is None:
                 print("No person is found on the image")
@@ -110,15 +114,11 @@ class PoseClassifier(object):
             else:
                 self.process_prediction(label, confidence)
 
-            # Press Esc to exit
-            if cv2.waitKey(args.delay) & 0xFF == 27:
-                break
 
         cap.release()
 
     def imshow(self, image, label: Optional[int], results: Any):
         """Draw the pose annotation on the image. """
-
         image.flags.writeable = True
         # image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
@@ -176,8 +176,10 @@ class PoseClassifier(object):
 
 
 if __name__ == '__main__':
-    # Start reading capture
-    cap = cv2.VideoCapture(args.source)
-    classifier = PoseClassifier(classifier_path=args.classifier_path, delay=args.delay)
+    if isinstance(args.source, int):
+        cap = cv2.VideoCapture(args.source)
+    else:
+        raise TypeError(f"Cannot found webcam of type {type(args.sourse)}, should be 'int' type")
 
-    classifier.start_predicting(capture=cap, draw_landmarks=args.display_image)
+    classifier = PoseClassifier(classifier_path=args.classifier_path, delay=args.delay)
+    classifier.start_predicting(capture=cap, imshow=args.display_image)
