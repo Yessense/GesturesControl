@@ -79,7 +79,12 @@ class PoseClassifier(object):
         self.LABELS_R = {value: key for key, value in self.LABELS.items()}
         self.DISTANSES_R = {value: key for key, value in self.DISTANCES.items()}
 
-    def start_predicting(self, capture, draw_landmarks=False):
+    def start_predicting(self, capture, imshow=False):
+        """Start an infinite processing of capture
+        output data is processing with self.process_prediction function
+        """
+
+        # check if capture is valid
         Capture.register(type(capture))
         assert isinstance(capture, Capture)
 
@@ -91,18 +96,18 @@ class PoseClassifier(object):
                 print("Ignoring empty camera frame.")
                 continue
 
-            prediction = self.predict_pose(image, draw_landmarks)
+            # get predictions
+            label, confidence, results = self.predict_pose(image)
 
-            if prediction is None:
+            # display image
+            if imshow:
+                self.imshow(image, label, results)
+
+            # processing predictions
+            if label is None:
                 print("No person is found on the image")
                 continue
             else:
-                if draw_landmarks:
-                    label, confidence, results = prediction
-                    self.draw_landmarks(image, label, results)
-                else:
-                    label, confidence = prediction
-
                 self.process_prediction(label, confidence)
 
             # Press Esc to exit
@@ -111,12 +116,13 @@ class PoseClassifier(object):
 
         cap.release()
 
-    def draw_landmarks(self, image, label: Optional[int] = None, results=None):
+    def imshow(self, image, label: Optional[int], results: Any):
         """Draw the pose annotation on the image. """
 
         image.flags.writeable = True
         # image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
+        # draw landmarks
         if results is not None:
             self.mp_drawing.draw_landmarks(
                 image,
@@ -127,37 +133,41 @@ class PoseClassifier(object):
         # Flip the image horizontally for a selfie-view display.
         image = cv2.flip(image, 1)
 
+        # Draw classname text on image
         if label is not None:
             cv2.putText(image, f'{self.LABELS[label]}', (10, 50), cv2.FONT_HERSHEY_PLAIN, 3, (0, 255, 0), 3)
 
+        # Display image
         cv2.imshow('Prediction', image)
 
-    def predict_pose(self, image, draw_results: bool = False) -> Union[None, Tuple[int, float], Tuple[int, float, Any]]:
+    def predict_pose(self, image) -> Tuple[Optional[int], Optional[float], Any]:
         # To improve performance, optionally mark the image as not writeable to
         # pass by reference.
         image.flags.writeable = False
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         results = self.pose.process(image)
 
+        # No detections
         if not results.pose_landmarks:
-            return None
+            return None, None, None
 
+        # Get all points in numpy.array
         points = [[point.x, point.y, point.z] for point in results.pose_landmarks.landmark]
         points = np.array(points)
 
+        # Get embeddings
         embeddings = self.embedder(points)
         embeddings = embeddings.reshape(-1, np.prod(embeddings.shape))  # type: ignore
 
+        # Predict probabilities
         pred = self.classifier.predict(embeddings, raw_score=True)[0]
         pred = softmax(pred)
 
+        # Get label and confidence
         label: int = np.argmax(pred).item()
         confidence: float = pred[label]
 
-        if draw_results:
-            return label, confidence, results
-        else:
-            return label, confidence
+        return label, confidence, results
 
     def process_prediction(self, label, confidence):
         """CHANGE OUTCOME HERE"""
