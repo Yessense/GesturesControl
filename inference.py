@@ -92,7 +92,7 @@ class PoseClassifier(object):
 
         while capture.isOpened():
             # getting camera frame
-            success, image = cap.read()
+            success, image = capture.read()
 
             if not success:
                 print("Ignoring empty camera frame.")
