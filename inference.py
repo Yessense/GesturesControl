@@ -20,6 +20,8 @@ program_parser.add_argument("--source", type=Union[int], default=0)
 program_parser.add_argument("--confidence", type=bool, default=True)
 program_parser.add_argument("--delay", type=int, default=5)
 program_parser.add_argument("--classifier_path", type=str, default='classifier.joblib')
+# model complexity 0, 1, 2
+program_parser.add_argument("--model_complexity", type=int, default=0)
 
 # parse input
 args = parser.parse_args()
@@ -56,7 +58,7 @@ class PoseClassifier(object):
 
         # Pose embedder
         self.embedder = FullBodyPoseEmbedder()
-        self.pose = self.mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
+        self.pose = self.mp_pose.Pose(model_complexity=args.model_complexity, min_detection_confidence=0.5, min_tracking_confidence=0.5)
 
         # Delay between camera frames
         self.delay = delay
